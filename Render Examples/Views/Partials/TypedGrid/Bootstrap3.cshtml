@@ -1,0 +1,113 @@
+@using Newtonsoft.Json.Linq
+@using Skybrud.Umbraco.GridData
+@using Skybrud.Umbraco.GridData.Rendering
+
+@inherits UmbracoViewPage<GridDataModel>
+
+@if (Model != null && Model.Sections != null) {
+
+    bool oneColumn = Model.Sections.Length == 1;
+    
+    <div class="umb-grid">
+        @if (oneColumn) {
+            foreach (GridSection section in Model.Sections) {
+                <div class="grid-section">
+                    @foreach (GridRow row in section.Rows) {
+                        @RenderRow(row, true);
+                    }
+                </div>
+            }   
+        } else { 
+            <div class="container">
+                <div class="row clearfix">
+                    @foreach (GridSection section in Model.Sections) {
+                        <div class="grid-section">
+                            <div class="col-md-@(section.Grid) column">
+                                @foreach (GridRow row in section.Rows) {
+                                    @RenderRow(row, false)
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>   
+        }
+    </div>
+}
+
+@helper RenderRow(GridRow row, bool singleColumn) {
+    <div @RenderElementAttributes(row)>
+        <div class="row clearfix">
+            @foreach (GridArea area in row.Areas ) {
+            <div class="col-md-@area.Grid column">
+                <div @RenderElementAttributes(area)>
+                    @{
+                        foreach (GridControl control in area.Controls) {
+                            GridControlWrapper wrappedControl = WrapControl(control);
+                            RenderControl(wrappedControl);
+                        }
+                    }
+                </div>
+            </div>}
+        </div>
+    </div>
+}
+
+@helper RenderControl(GridControlWrapper wrappedControl)
+{
+    if (wrappedControl != null && wrappedControl.Editor != null && wrappedControl.Editor.View != null)
+    {
+        @Html.Partial("TypedGrid/Editors/Base", wrappedControl)
+    }
+}
+
+@functions {
+
+    public static GridControlWrapper WrapControl(GridControl control)
+    {
+        if (control == null)
+        {
+            return null;
+        }
+        return GridContext.Current.GetControlWrapper(control);
+    }
+    
+    public static MvcHtmlString RenderElementAttributes(GridRow row) {
+
+        List<string> attrs = new List<string>();
+
+        if (row.Config != null) {
+            attrs.AddRange(row.Config.Keys.Select(key => key + "='" + row.Config[key] + "'"));
+        }
+
+        if (row.Styles != null) {
+            List<string> cssVals = row.Styles.Keys.Select(key => key + ":" + row.Styles[key] + ";").ToList();
+            if (cssVals.Any()) {
+                attrs.Add("style='" + String.Join(" ", cssVals) + "'");
+            }
+        }
+
+        return new MvcHtmlString(string.Join(" ", attrs));
+    
+    }
+    
+    public static MvcHtmlString RenderElementAttributes(GridArea area) {
+        
+        List<string> attrs = new List<string>();
+
+		if (area.Config != null) {
+		    attrs.AddRange(area.Config.Keys.Select(key => key + "='" + area.Config[key] + "'"));
+		}
+
+        if (area.Styles != null) { 
+        	List<string> cssVals = area.Styles.Keys.Select(key => key + ":" + area.Styles[key] + ";").ToList();
+            if (cssVals.Any()) {
+            	attrs.Add("style='" + String.Join(" ", cssVals) + "'");
+			}
+        }
+            
+        return new MvcHtmlString(String.Join(" ", attrs));
+    
+    }
+
+}
