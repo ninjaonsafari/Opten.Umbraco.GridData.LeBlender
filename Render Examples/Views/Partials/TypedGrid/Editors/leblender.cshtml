@@ -1,0 +1,41 @@
+﻿@using Skybrud.Umbraco.GridData.Rendering
+@using Skybrud.Umbraco.GridData.Values
+@using Skybrud.Umbraco.GridData.Config
+@using Opten.Umbraco.GridData.Config
+@using Opten.Umbraco.GridData.Values
+@using Lecoati.LeBlender.Extension
+@using Lecoati.LeBlender.Extension.Models
+
+@inherits UmbracoViewPage<GridControlWrapper<GridControlLeBlenderValue>>
+@try
+{
+    GridEditorLeBlenderConfig config = Model.Control.Editor.Config as GridEditorLeBlenderConfig;
+    string guid = config.Guid != null ? config.Guid : "";
+    LeBlenderModel blenderModel = Model.Value.Value;
+    var frontView = config.FrontView == null || String.IsNullOrEmpty(config.FrontView) ?
+        "" : (!config.FrontView.Contains("/") ? string.Format("/Views/Partials/TypedGrid/Editors/{0}.cshtml", config.FrontView) : config.FrontView);
+    string editorAlias = Model.Control.Editor.Alias;
+    ViewDataDictionary datas = new ViewDataDictionary(this.ViewData) { { "editorAlias", editorAlias }, { "frontView", frontView } };
+    int cacheExpiration = Helper.GetCacheExpiration(editorAlias);
+    if (cacheExpiration > 0 && Helper.IsFrontEnd())
+    {
+        <text>
+            @Html.LeBlenderCachedPartial("/App_Plugins/LeBlender/editors/leblendereditor/views/LeBlender.cshtml", blenderModel, cacheExpiration, guid, datas)
+        </text>
+    }
+    else
+    {
+        <text>
+            @Html.Partial("/App_Plugins/LeBlender/editors/leblendereditor/views/LeBlender.cshtml", blenderModel, datas)
+        </text>
+    }
+}
+catch (Exception ex)
+{
+    if (!Helper.IsFrontEnd())
+    {
+        <p class="red">Something went wrong with this editor, below is the exception detail:</p>
+    }
+    <p class="leblender-exception">@Helper.GetInnerMessage(ex)</p>
+}
+
